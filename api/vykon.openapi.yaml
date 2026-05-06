@@ -1,0 +1,244 @@
+openapi: 3.0.0
+servers:
+  - description: Cluster Endpoint
+    url: /api
+info:
+  description: Evidencia výkonov zamestnancov nemocnice (Performance records of hospital staff) for Web-In-Cloud system
+  version: "1.0.0"
+  title: Evidencia Výkonov API
+  contact:
+    email: your_email@stuba.sk
+  license:
+    name: CC BY 4.0
+    url: "https://creativecommons.org/licenses/by/4.0/"
+tags:
+  - name: evidenciaVykonov
+    description: API for managing employee performance records (worked hours, examinations, operations, on-call shifts)
+
+paths:
+  /vykon:
+    get:
+      tags:
+        - evidenciaVykonov
+      summary: List performance records
+      description: Returns all performance records, optionally filtered by date range or employee.
+      operationId: getVykonList
+      parameters:
+        - in: query
+          name: zamestnanecId
+          description: Filter by employee identifier
+          schema:
+            type: string
+        - in: query
+          name: from
+          description: Include records on or after this date (ISO 8601, yyyy-MM-dd)
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: to
+          description: Include records on or before this date (ISO 8601, yyyy-MM-dd)
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Array of performance records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VykonZaznam"
+              examples:
+                response:
+                  $ref: "#/components/examples/VykonListExample"
+    post:
+      tags:
+        - evidenciaVykonov
+      summary: Create a new performance record
+      operationId: createVykon
+      requestBody:
+        required: true
+        description: Performance record to create. The `id` field is assigned by the server and ignored if provided.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VykonZaznam"
+            examples:
+              request:
+                $ref: "#/components/examples/VykonExample"
+      responses:
+        "201":
+          description: Created record (with assigned id)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VykonZaznam"
+        "400":
+          description: Invalid request body
+        "409":
+          description: Record with this id already exists
+
+  /vykon/{vykonId}:
+    get:
+      tags:
+        - evidenciaVykonov
+      summary: Get a single performance record by id
+      operationId: getVykon
+      parameters:
+        - $ref: "#/components/parameters/VykonId"
+      responses:
+        "200":
+          description: The requested record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VykonZaznam"
+              examples:
+                response:
+                  $ref: "#/components/examples/VykonExample"
+        "404":
+          description: Record not found
+    put:
+      tags:
+        - evidenciaVykonov
+      summary: Update an existing performance record
+      operationId: updateVykon
+      parameters:
+        - $ref: "#/components/parameters/VykonId"
+      requestBody:
+        required: true
+        description: Updated record. Path `vykonId` takes precedence over any `id` in the body.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VykonZaznam"
+            examples:
+              request:
+                $ref: "#/components/examples/VykonExample"
+      responses:
+        "200":
+          description: Updated record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VykonZaznam"
+        "400":
+          description: Invalid request body
+        "404":
+          description: Record not found
+    delete:
+      tags:
+        - evidenciaVykonov
+      summary: Delete (archive) a performance record
+      operationId: deleteVykon
+      parameters:
+        - $ref: "#/components/parameters/VykonId"
+      responses:
+        "204":
+          description: Record deleted
+        "404":
+          description: Record not found
+
+components:
+  parameters:
+    VykonId:
+      in: path
+      name: vykonId
+      required: true
+      description: Unique identifier of the performance record
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+
+  schemas:
+    VykonZaznam:
+      type: object
+      required:
+        - zamestnanecMeno
+        - datum
+        - odpracovaneHodiny
+        - pocetVysetreni
+        - pocetOperacii
+        - pocetSluzieb
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Server-assigned unique identifier
+          example: 1
+          readOnly: true
+        zamestnanecId:
+          type: string
+          description: Employee identifier (badge or HR id)
+          example: EMP-001
+        zamestnanecMeno:
+          type: string
+          description: Full name of the employee
+          example: MUDr. Jana Nováková
+        datum:
+          type: string
+          format: date
+          description: Date the work was performed (ISO 8601)
+          example: "2026-04-28"
+        odpracovaneHodiny:
+          type: number
+          format: float
+          minimum: 0
+          description: Hours worked on this date
+          example: 8
+        pocetVysetreni:
+          type: integer
+          minimum: 0
+          description: Number of examinations performed
+          example: 12
+        pocetOperacii:
+          type: integer
+          minimum: 0
+          description: Number of operations performed
+          example: 1
+        pocetSluzieb:
+          type: integer
+          minimum: 0
+          description: Number of on-call shifts
+          example: 0
+        poznamka:
+          type: string
+          description: Optional free-text note
+          example: Bežná ambulantná zmena
+
+  examples:
+    VykonExample:
+      summary: A single performance record
+      value:
+        id: 1
+        zamestnanecId: EMP-001
+        zamestnanecMeno: MUDr. Jana Nováková
+        datum: "2026-04-28"
+        odpracovaneHodiny: 8
+        pocetVysetreni: 12
+        pocetOperacii: 1
+        pocetSluzieb: 0
+        poznamka: Bežná ambulantná zmena
+    VykonListExample:
+      summary: Multiple performance records
+      value:
+        - id: 1
+          zamestnanecId: EMP-001
+          zamestnanecMeno: MUDr. Jana Nováková
+          datum: "2026-04-28"
+          odpracovaneHodiny: 8
+          pocetVysetreni: 12
+          pocetOperacii: 1
+          pocetSluzieb: 0
+          poznamka: Bežná ambulantná zmena
+        - id: 2
+          zamestnanecId: EMP-002
+          zamestnanecMeno: MUDr. Peter Kováč
+          datum: "2026-04-29"
+          odpracovaneHodiny: 12
+          pocetVysetreni: 4
+          pocetOperacii: 3
+          pocetSluzieb: 1
