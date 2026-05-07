@@ -1,0 +1,278 @@
+openapi: 3.0.0
+servers:
+  - description: Cluster Endpoint
+    url: /api
+info:
+  description: Employee profiles of hospital staff for the Web-In-Cloud system
+  version: "1.0.0"
+  title: Employee Profiles API
+tags:
+  - name: employeeProfiles
+    description: API for managing hospital employee profiles, qualifications, certificates, and archival status
+
+paths:
+  /employees:
+    get:
+      tags:
+        - employeeProfiles
+      summary: List employee profiles
+      description: Returns all employee profiles, optionally filtered by department, specialization, or status.
+      operationId: listEmployeeProfiles
+      parameters:
+        - in: query
+          name: department
+          description: Filter by department / ambulance name
+          schema:
+            type: string
+        - in: query
+          name: specialization
+          description: Filter by specialization
+          schema:
+            type: string
+        - in: query
+          name: status
+          description: Filter by profile status
+          schema:
+            $ref: "#/components/schemas/EmployeeStatus"
+      responses:
+        "200":
+          description: Array of employee profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmployeeProfile"
+              examples:
+                response:
+                  $ref: "#/components/examples/EmployeeProfileListExample"
+    post:
+      tags:
+        - employeeProfiles
+      summary: Create a new employee profile
+      operationId: createEmployeeProfile
+      requestBody:
+        required: true
+        description: Employee profile to create. The `id` field is assigned by the server and ignored if provided.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeProfile"
+            examples:
+              request:
+                $ref: "#/components/examples/EmployeeProfileExample"
+      responses:
+        "201":
+          description: Created employee profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeProfile"
+        "400":
+          description: Invalid request body
+        "409":
+          description: Employee profile with this id already exists
+
+  /employees/{employeeId}:
+    get:
+      tags:
+        - employeeProfiles
+      summary: Get a single employee profile by id
+      operationId: getEmployeeProfile
+      parameters:
+        - $ref: "#/components/parameters/EmployeeId"
+      responses:
+        "200":
+          description: The requested employee profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeProfile"
+        "404":
+          description: Employee profile not found
+    put:
+      tags:
+        - employeeProfiles
+      summary: Update an existing employee profile
+      operationId: updateEmployeeProfile
+      parameters:
+        - $ref: "#/components/parameters/EmployeeId"
+      requestBody:
+        required: true
+        description: Updated employee profile. Path `employeeId` takes precedence over any `id` in the body.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeProfile"
+            examples:
+              request:
+                $ref: "#/components/examples/EmployeeProfileExample"
+      responses:
+        "200":
+          description: Updated employee profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeProfile"
+        "400":
+          description: Invalid request body
+        "404":
+          description: Employee profile not found
+    delete:
+      tags:
+        - employeeProfiles
+      summary: Archive an employee profile
+      operationId: archiveEmployeeProfile
+      parameters:
+        - $ref: "#/components/parameters/EmployeeId"
+      responses:
+        "204":
+          description: Employee profile archived
+        "404":
+          description: Employee profile not found
+
+components:
+  parameters:
+    EmployeeId:
+      in: path
+      name: employeeId
+      required: true
+      description: Unique identifier of the employee profile
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+
+  schemas:
+    EmployeeStatus:
+      type: string
+      enum:
+        - active
+        - archived
+      example: active
+
+    EmployeeProfile:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - birthDate
+        - position
+        - specialization
+        - qualification
+        - employmentStartDate
+        - certificates
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Server-assigned unique identifier
+          example: 1
+          readOnly: true
+        firstName:
+          type: string
+          example: Jana
+        lastName:
+          type: string
+          example: Nováková
+        birthDate:
+          type: string
+          format: date
+          example: "1988-04-12"
+        email:
+          type: string
+          format: email
+          example: jana.novakova@nemocnica.sk
+        phone:
+          type: string
+          example: "+421900123456"
+        position:
+          type: string
+          example: Lekárka
+        department:
+          type: string
+          example: Urgentný príjem
+        specialization:
+          type: string
+          example: Urgentná medicína
+        qualification:
+          type: string
+          example: MUDr.
+        employmentStartDate:
+          type: string
+          format: date
+          example: "2026-06-01"
+        certificates:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          example:
+            - ALS
+            - BLS
+        note:
+          type: string
+          example: Nástup po schválení HR.
+        status:
+          $ref: "#/components/schemas/EmployeeStatus"
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        archivedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+  examples:
+    EmployeeProfileExample:
+      summary: A single employee profile
+      value:
+        id: 1
+        firstName: Jana
+        lastName: Nováková
+        birthDate: "1988-04-12"
+        email: jana.novakova@nemocnica.sk
+        phone: "+421900123456"
+        position: Lekárka
+        department: Urgentný príjem
+        specialization: Urgentná medicína
+        qualification: MUDr.
+        employmentStartDate: "2026-06-01"
+        certificates:
+          - ALS
+          - BLS
+        status: active
+        createdAt: "2026-05-07T21:00:00Z"
+    EmployeeProfileListExample:
+      summary: Multiple employee profiles
+      value:
+        - id: 1
+          firstName: Jana
+          lastName: Nováková
+          birthDate: "1988-04-12"
+          position: Lekárka
+          department: Urgentný príjem
+          specialization: Urgentná medicína
+          qualification: MUDr.
+          employmentStartDate: "2026-06-01"
+          certificates:
+            - ALS
+          status: active
+        - id: 2
+          firstName: Peter
+          lastName: Kováč
+          birthDate: "1982-09-01"
+          position: Sestra
+          department: Kardiológia
+          specialization: Kardiologická sestra
+          qualification: Mgr.
+          employmentStartDate: "2026-06-03"
+          certificates:
+            - EKG
+          status: archived
+          archivedAt: "2026-07-01T08:30:00Z"

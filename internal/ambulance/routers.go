@@ -18,13 +18,13 @@ import (
 // Route is the information for every URI.
 type Route struct {
 	// Name is the name of this Route.
-	Name		string
+	Name string
 	// Method is the string for the HTTP method. ex) GET, POST etc..
-	Method		string
+	Method string
 	// Pattern is the pattern of the URI.
-	Pattern	 	string
+	Pattern string
 	// HandlerFunc is the handler function of this route.
-	HandlerFunc	gin.HandlerFunc
+	HandlerFunc gin.HandlerFunc
 }
 
 // NewRouter returns a new router.
@@ -67,6 +67,9 @@ type ApiHandleFunctions struct {
 
 	// Routes for the DepartmentAssignmentsAPI part of the API
 	DepartmentAssignmentsAPI DepartmentAssignmentsAPI
+
+	// Routes for the EmployeeProfilesAPI part of the API
+	EmployeeProfilesAPI EmployeeProfilesAPI
 }
 
 func getRoutes(handleFunctions ApiHandleFunctions) []Route {
@@ -130,6 +133,36 @@ func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 			http.MethodPut,
 			"/api/department-assignments/:assignmentId",
 			handleFunctions.DepartmentAssignmentsAPI.UpdateDepartmentAssignment,
+		},
+		{
+			"CreateEmployeeProfile",
+			http.MethodPost,
+			"/api/employees",
+			handleFunctions.EmployeeProfilesAPI.CreateEmployeeProfile,
+		},
+		{
+			"ArchiveEmployeeProfile",
+			http.MethodDelete,
+			"/api/employees/:employeeId",
+			handleFunctions.EmployeeProfilesAPI.ArchiveEmployeeProfile,
+		},
+		{
+			"GetEmployeeProfile",
+			http.MethodGet,
+			"/api/employees/:employeeId",
+			handleFunctions.EmployeeProfilesAPI.GetEmployeeProfile,
+		},
+		{
+			"ListEmployeeProfiles",
+			http.MethodGet,
+			"/api/employees",
+			handleFunctions.EmployeeProfilesAPI.ListEmployeeProfiles,
+		},
+		{
+			"UpdateEmployeeProfile",
+			http.MethodPut,
+			"/api/employees/:employeeId",
+			handleFunctions.EmployeeProfilesAPI.UpdateEmployeeProfile,
 		},
 	}
 }
