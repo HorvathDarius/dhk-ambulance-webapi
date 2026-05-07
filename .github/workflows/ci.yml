@@ -27,11 +27,18 @@ jobs:
       with:
         go-version: ${{ steps.get_go_version.outputs.go_version }}
 
-    - name: Generate api controllers interfaces
+    - name: Generate api controllers interfaces (vykon)
       uses: craicoverflow/openapi-generator-generate-action@v1.2.1
       with:
         generator: go-gin-server
         input: api/vykon.openapi.yaml
+        additional-properties: apiPath=internal/ambulance,packageName=ambulance,interfaceOnly=true
+
+    - name: Generate api controllers interfaces (department assignments)
+      uses: craicoverflow/openapi-generator-generate-action@v1.2.1
+      with:
+        generator: go-gin-server
+        input: api/assignment.openapi.yaml
         additional-properties: apiPath=internal/ambulance,packageName=ambulance,interfaceOnly=true
 
     - name: Build
