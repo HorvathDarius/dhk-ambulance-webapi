@@ -95,6 +95,11 @@ func (suite *AmbulanceWlSuite) Test_GetPerformanceRecord_ReturnsRecord() {
 func (suite *AmbulanceWlSuite) Test_CreatePerformanceRecord_Returns201WithAssignedId() {
 	// ARRANGE
 	db := &dbServiceMock{}
+	existing := []*PerformanceRecord{
+		{Id: 1, EmployeeName: "A", Date: "2026-04-01", HoursWorked: 8},
+		{Id: 2, EmployeeName: "B", Date: "2026-04-02", HoursWorked: 8},
+	}
+	db.On("ListDocuments", mock.Anything).Return(existing, nil)
 	db.On("CreateDocument", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("*ambulance.PerformanceRecord")).Return(nil)
 
 	body := `{"employeeName":"MUDr. Jana","date":"2026-04-28","hoursWorked":8,"examinationCount":1,"operationCount":0,"shiftCount":0}`
@@ -112,8 +117,32 @@ func (suite *AmbulanceWlSuite) Test_CreatePerformanceRecord_Returns201WithAssign
 
 	var created PerformanceRecord
 	suite.NoError(json.Unmarshal(rec.Body.Bytes(), &created))
-	suite.NotZero(created.Id, "server should assign a non-zero id")
+	suite.Equal(int64(3), created.Id, "id should be max(existing)+1")
 	suite.Equal("MUDr. Jana", created.EmployeeName)
+	db.AssertExpectations(suite.T())
+}
+
+func (suite *AmbulanceWlSuite) Test_CreatePerformanceRecord_AssignsId1WhenEmpty() {
+	// ARRANGE
+	db := &dbServiceMock{}
+	db.On("ListDocuments", mock.Anything).Return([]*PerformanceRecord{}, nil)
+	db.On("CreateDocument", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("*ambulance.PerformanceRecord")).Return(nil)
+
+	body := `{"employeeName":"MUDr. Jana","date":"2026-04-28","hoursWorked":8,"examinationCount":1,"operationCount":0,"shiftCount":0}`
+	req := httptest.NewRequest(http.MethodPost, "/api/performance-records", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	c, rec := suite.newTestContext(db, req)
+
+	// ACT
+	api := &implPerformanceRecordsAPI{}
+	api.CreatePerformanceRecord(c)
+
+	// ASSERT
+	suite.Equal(http.StatusCreated, rec.Code)
+	var created PerformanceRecord
+	suite.NoError(json.Unmarshal(rec.Body.Bytes(), &created))
+	suite.Equal(int64(1), created.Id)
 	db.AssertExpectations(suite.T())
 }
 

@@ -1,13 +1,28 @@
 package ambulance
 
 import (
+	"context"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/HorvathDarius/dhk-ambulance-webapi/internal/db_service"
 	"github.com/gin-gonic/gin"
 )
+
+// nextSequentialId returns max(existing id) + 1, or 1 for an empty collection.
+func nextSequentialId(ctx context.Context, db db_service.DbService[PerformanceRecord]) (int64, error) {
+	records, err := db.ListDocuments(ctx)
+	if err != nil {
+		return 0, err
+	}
+	var maxId int64 = 0
+	for _, r := range records {
+		if r != nil && r.Id > maxId {
+			maxId = r.Id
+		}
+	}
+	return maxId + 1, nil
+}
 
 type implPerformanceRecordsAPI struct {
 }
@@ -72,10 +87,18 @@ func (o *implPerformanceRecordsAPI) CreatePerformanceRecord(c *gin.Context) {
 		return
 	}
 
-	// id is server-assigned per the spec; use nanosecond timestamp for uniqueness.
-	record.Id = time.Now().UnixNano()
+	id, err := nextSequentialId(c.Request.Context(), db)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"status":  "Bad Gateway",
+			"message": "Failed to allocate record id",
+			"error":   err.Error(),
+		})
+		return
+	}
+	record.Id = id
 
-	err := db.CreateDocument(c.Request.Context(), record.Id, &record)
+	err = db.CreateDocument(c.Request.Context(), record.Id, &record)
 	switch err {
 	case nil:
 		c.JSON(http.StatusCreated, record)
