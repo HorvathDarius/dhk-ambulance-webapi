@@ -1,13 +1,28 @@
 package ambulance
 
 import (
+	"context"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/HorvathDarius/dhk-ambulance-webapi/internal/db_service"
 	"github.com/gin-gonic/gin"
 )
+
+// nextSequentialAssignmentId returns max(existing id) + 1, or 1 for an empty collection.
+func nextSequentialAssignmentId(ctx context.Context, db db_service.DbService[DepartmentAssignment]) (int64, error) {
+	assignments, err := db.ListDocuments(ctx)
+	if err != nil {
+		return 0, err
+	}
+	var maxId int64 = 0
+	for _, a := range assignments {
+		if a != nil && a.Id > maxId {
+			maxId = a.Id
+		}
+	}
+	return maxId + 1, nil
+}
 
 type implDepartmentAssignmentsAPI struct {
 }
@@ -71,9 +86,18 @@ func (o *implDepartmentAssignmentsAPI) CreateDepartmentAssignment(c *gin.Context
 		return
 	}
 
-	assignment.Id = time.Now().UnixNano()
+	id, err := nextSequentialAssignmentId(c.Request.Context(), db)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"status":  "Bad Gateway",
+			"message": "Failed to allocate assignment id",
+			"error":   err.Error(),
+		})
+		return
+	}
+	assignment.Id = id
 
-	err := db.CreateDocument(c.Request.Context(), assignment.Id, &assignment)
+	err = db.CreateDocument(c.Request.Context(), assignment.Id, &assignment)
 	switch err {
 	case nil:
 		c.JSON(http.StatusCreated, assignment)
