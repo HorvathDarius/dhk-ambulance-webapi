@@ -64,10 +64,13 @@ type ApiHandleFunctions struct {
 
 	// Routes for the PerformanceRecordsAPI part of the API
 	PerformanceRecordsAPI PerformanceRecordsAPI
+
+	// Routes for the DepartmentAssignmentsAPI part of the API
+	DepartmentAssignmentsAPI DepartmentAssignmentsAPI
 }
 
 func getRoutes(handleFunctions ApiHandleFunctions) []Route {
-	return []Route{ 
+	return []Route{
 		{
 			"CreatePerformanceRecord",
 			http.MethodPost,
@@ -97,6 +100,36 @@ func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 			http.MethodPut,
 			"/api/performance-records/:recordId",
 			handleFunctions.PerformanceRecordsAPI.UpdatePerformanceRecord,
+		},
+		{
+			"CreateDepartmentAssignment",
+			http.MethodPost,
+			"/api/department-assignments",
+			handleFunctions.DepartmentAssignmentsAPI.CreateDepartmentAssignment,
+		},
+		{
+			"DeleteDepartmentAssignment",
+			http.MethodDelete,
+			"/api/department-assignments/:assignmentId",
+			handleFunctions.DepartmentAssignmentsAPI.DeleteDepartmentAssignment,
+		},
+		{
+			"GetDepartmentAssignment",
+			http.MethodGet,
+			"/api/department-assignments/:assignmentId",
+			handleFunctions.DepartmentAssignmentsAPI.GetDepartmentAssignment,
+		},
+		{
+			"ListDepartmentAssignments",
+			http.MethodGet,
+			"/api/department-assignments",
+			handleFunctions.DepartmentAssignmentsAPI.ListDepartmentAssignments,
+		},
+		{
+			"UpdateDepartmentAssignment",
+			http.MethodPut,
+			"/api/department-assignments/:assignmentId",
+			handleFunctions.DepartmentAssignmentsAPI.UpdateDepartmentAssignment,
 		},
 	}
 }

@@ -38,14 +38,26 @@ func main() {
         // setup context update  middleware
     dbService := db_service.NewMongoService[ambulance.PerformanceRecord](db_service.MongoServiceConfig{})
     defer dbService.Disconnect(context.Background())
+
+    assignmentCollection := os.Getenv("AMBULANCE_API_MONGODB_ASSIGNMENT_COLLECTION")
+    if assignmentCollection == "" {
+        assignmentCollection = "department_assignments"
+    }
+    assignmentDbService := db_service.NewMongoService[ambulance.DepartmentAssignment](db_service.MongoServiceConfig{
+        Collection: assignmentCollection,
+    })
+    defer assignmentDbService.Disconnect(context.Background())
+
     engine.Use(func(ctx *gin.Context) {
         ctx.Set("db_service", dbService)
+        ctx.Set("db_service_assignment", assignmentDbService)
         ctx.Next()
     })
 
     // request routings
 	handleFunctions := &ambulance.ApiHandleFunctions{
-		PerformanceRecordsAPI:  ambulance.NewPerformanceRecordsApi(),
+		PerformanceRecordsAPI:    ambulance.NewPerformanceRecordsApi(),
+		DepartmentAssignmentsAPI: ambulance.NewDepartmentAssignmentsApi(),
 	}
 	ambulance.NewRouterWithGinEngine(engine, *handleFunctions)
     engine.GET("/openapi", api.HandleOpenApi)

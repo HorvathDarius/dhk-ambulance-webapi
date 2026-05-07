@@ -1,0 +1,229 @@
+openapi: 3.0.0
+servers:
+  - description: Cluster Endpoint
+    url: /api
+info:
+  description: Department assignments of hospital staff (assignment of employees to ambulances and hospital departments) for the Web-In-Cloud system
+  version: "1.0.0"
+  title: Department Assignments API
+tags:
+  - name: departmentAssignments
+    description: API for managing employee department assignments (which employee belongs to which ambulance / hospital department, and for what time range)
+
+paths:
+  /department-assignments:
+    get:
+      tags:
+        - departmentAssignments
+      summary: List department assignments
+      description: Returns all department assignments, optionally filtered by department, employee, or active-on date.
+      operationId: listDepartmentAssignments
+      parameters:
+        - in: query
+          name: employeeId
+          description: Filter by employee identifier
+          schema:
+            type: string
+        - in: query
+          name: departmentId
+          description: Filter by department identifier
+          schema:
+            type: string
+        - in: query
+          name: activeOn
+          description: Return only assignments active on this date (ISO 8601, yyyy-MM-dd)
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Array of department assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DepartmentAssignment"
+              examples:
+                response:
+                  $ref: "#/components/examples/DepartmentAssignmentListExample"
+    post:
+      tags:
+        - departmentAssignments
+      summary: Create a new department assignment
+      operationId: createDepartmentAssignment
+      requestBody:
+        required: true
+        description: Department assignment to create. The `id` field is assigned by the server and ignored if provided.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentAssignment"
+            examples:
+              request:
+                $ref: "#/components/examples/DepartmentAssignmentExample"
+      responses:
+        "201":
+          description: Created assignment (with assigned id)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepartmentAssignment"
+        "400":
+          description: Invalid request body
+        "409":
+          description: Assignment with this id already exists
+
+  /department-assignments/{assignmentId}:
+    get:
+      tags:
+        - departmentAssignments
+      summary: Get a single department assignment by id
+      operationId: getDepartmentAssignment
+      parameters:
+        - $ref: "#/components/parameters/AssignmentId"
+      responses:
+        "200":
+          description: The requested assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepartmentAssignment"
+              examples:
+                response:
+                  $ref: "#/components/examples/DepartmentAssignmentExample"
+        "404":
+          description: Assignment not found
+    put:
+      tags:
+        - departmentAssignments
+      summary: Update an existing department assignment
+      operationId: updateDepartmentAssignment
+      parameters:
+        - $ref: "#/components/parameters/AssignmentId"
+      requestBody:
+        required: true
+        description: Updated assignment. Path `assignmentId` takes precedence over any `id` in the body.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentAssignment"
+            examples:
+              request:
+                $ref: "#/components/examples/DepartmentAssignmentExample"
+      responses:
+        "200":
+          description: Updated assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepartmentAssignment"
+        "400":
+          description: Invalid request body
+        "404":
+          description: Assignment not found
+    delete:
+      tags:
+        - departmentAssignments
+      summary: Delete (revoke) a department assignment
+      operationId: deleteDepartmentAssignment
+      parameters:
+        - $ref: "#/components/parameters/AssignmentId"
+      responses:
+        "204":
+          description: Assignment deleted
+        "404":
+          description: Assignment not found
+
+components:
+  parameters:
+    AssignmentId:
+      in: path
+      name: assignmentId
+      required: true
+      description: Unique identifier of the department assignment
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+
+  schemas:
+    DepartmentAssignment:
+      type: object
+      required:
+        - employeeName
+        - departmentName
+        - fromDate
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Server-assigned unique identifier
+          example: 1
+          readOnly: true
+        employeeId:
+          type: string
+          description: Employee identifier (badge or HR id)
+          example: EMP-001
+        employeeName:
+          type: string
+          description: Full name of the employee
+          example: MUDr. Jana Nováková
+        departmentId:
+          type: string
+          description: Department identifier
+          example: DEPT-CARD
+        departmentName:
+          type: string
+          description: Human-readable department / ambulance name
+          example: Kardiologická ambulancia
+        role:
+          type: string
+          description: Role of the employee within the department
+          example: Vedúci lekár
+        fromDate:
+          type: string
+          format: date
+          description: First day of the assignment (ISO 8601)
+          example: "2026-01-01"
+        toDate:
+          type: string
+          format: date
+          description: Last day of the assignment (ISO 8601). Empty / omitted means the assignment is currently active.
+          example: "2026-12-31"
+        note:
+          type: string
+          description: Optional free-text note
+          example: Rotácia v rámci internej kliniky
+
+  examples:
+    DepartmentAssignmentExample:
+      summary: A single department assignment
+      value:
+        id: 1
+        employeeId: EMP-001
+        employeeName: MUDr. Jana Nováková
+        departmentId: DEPT-CARD
+        departmentName: Kardiologická ambulancia
+        role: Vedúci lekár
+        fromDate: "2026-01-01"
+        toDate: "2026-12-31"
+        note: Rotácia v rámci internej kliniky
+    DepartmentAssignmentListExample:
+      summary: Multiple department assignments
+      value:
+        - id: 1
+          employeeId: EMP-001
+          employeeName: MUDr. Jana Nováková
+          departmentId: DEPT-CARD
+          departmentName: Kardiologická ambulancia
+          role: Vedúci lekár
+          fromDate: "2026-01-01"
+          toDate: "2026-12-31"
+        - id: 2
+          employeeId: EMP-002
+          employeeName: MUDr. Peter Kováč
+          departmentId: DEPT-SURG
+          departmentName: Chirurgické oddelenie
+          role: Lekár
+          fromDate: "2026-03-15"
