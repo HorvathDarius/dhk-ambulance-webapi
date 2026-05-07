@@ -1,5 +1,4 @@
 internal/ambulance/api_*
 internal/ambulance/model_*
-internal/ambulance/routers.go
 build/
 deployments/
